@@ -24,68 +24,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    // display weight options and default per animal type
-    $config = [
-        'vacuno'  => ['key' => 'vacuno',  'name' => 'Vacuno',  'title' => 'Listado de cortes vacunos',  'displayWeights' => [90, 100, 110, 118, 120, 130], 'defaultWeight' => 118],
-        'porcino' => ['key' => 'porcino', 'name' => 'Porcino', 'title' => 'Listado de cortes porcinos', 'displayWeights' => [80, 90, 100, 110, 120],        'defaultWeight' => 100],
-        'aviar'   => ['key' => 'avicola', 'name' => 'Avicola', 'title' => 'Listado de cortes avicolas', 'displayWeights' => [2, 3, 4, 5],                   'defaultWeight' => 3],
-    ];
+    if (Auth::check()) {
+        /** @var User $user */
+        $user = Auth::user();
 
-    $categoryData = [];
-    foreach ($config as $typeName => $cfg) {
-        $type = AnimalType::where('nombre', $typeName)->first();
-        if (! $type) {
-            continue;
-        }
-
-        // Load all reference averages for this type; use the first peso_referencia as the base
-        $averages = CutReferenceAverage::with('cutCatalog')
-            ->where('animal_type_id', $type->id)
-            ->whereHas('cutCatalog', fn ($q) => $q->where('activo', true)->whereNull('user_id'))
-            ->orderBy('peso_referencia')
-            ->get();
-
-        if ($averages->isEmpty()) {
-            continue;
-        }
-
-        // Pick the most common (or first) reference weight as base
-        $baseWeight = (float) $averages->first()->peso_referencia;
-
-        // Build baseCuts from all records at the base weight
-        $baseCuts = $averages
-            ->filter(fn ($r) => (float) $r->peso_referencia === $baseWeight)
-            ->map(fn ($r) => [
-                'name'  => $r->cutCatalog->nombre_canonico,
-                'avgKg' => (float) $r->kg_promedio,
-            ])
-            ->values()
-            ->all();
-
-        // Scale cuts proportionally for each display weight
-        $cutsByWeight = [];
-        foreach ($cfg['displayWeights'] as $displayWeight) {
-            $ratio = $displayWeight / $baseWeight;
-            $cutsByWeight[$displayWeight] = array_map(fn ($cut) => [
-                'name'  => $cut['name'],
-                'avgKg' => round($cut['avgKg'] * $ratio, 3),
-            ], $baseCuts);
-        }
-
-        $categoryData[$cfg['key']] = [
-            'key'          => $cfg['key'],
-            'name'         => $cfg['name'],
-            'title'        => $cfg['title'],
-            'weights'      => $cfg['displayWeights'],
-            'defaultWeight' => $cfg['defaultWeight'],
-            'cutsByWeight' => $cutsByWeight,
-        ];
+        return redirect()->route($user->dashboardRouteName());
     }
 
-    return view('welcome', [
-        'categoryData' => $categoryData,
-        'cutVisibility' => Cache::get('landing_cut_visibility', []),
-    ]);
+    return redirect()->route('register');
 })->name('landing');
 
 Route::middleware('guest')->group(function () {
@@ -117,8 +63,13 @@ Route::post('/logout', function () {
     request()->session()->invalidate();
     request()->session()->regenerateToken();
 
-    return redirect()->route('landing');
+    return redirect()->route('register');
 })->middleware('auth')->name('logout');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/billing/planes', BillingPlans::class)->name('billing.plans');
+    Route::get('/billing/pasarela/{plan}', BillingCheckout::class)->name('billing.checkout');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
@@ -142,9 +93,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cuts', CutsIndex::class)->name('cuts.index');
     Route::get('/cuts/create', CutsForm::class)->name('cuts.create');
     Route::get('/cuts/{cut}/edit', CutsForm::class)->name('cuts.edit');
-
-    Route::get('/billing/planes', BillingPlans::class)->name('billing.plans');
-    Route::get('/billing/pasarela/{plan}', BillingCheckout::class)->name('billing.checkout');
 
     Route::get('/admin/config', AdminConfigIndex::class)->name('admin.config.index');
     Route::get('/admin/config/usuarios', AdminUsuariosEstado::class)->name('admin.config.usuarios');

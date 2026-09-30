@@ -5,6 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ config('app.name', 'Carnicos SaaS') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        @media (max-width: 767.98px) {
+            .subtotal-col {
+                display: none !important;
+            }
+
+            .active-col {
+                display: none !important;
+            }
+
+            .mobile-subtotal {
+                display: block !important;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .subtotal-col {
+                display: table-cell !important;
+            }
+
+            .active-col {
+                display: table-cell !important;
+            }
+
+            .mobile-subtotal {
+                display: none !important;
+            }
+        }
+    </style>
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
     <main class="min-h-screen w-full p-3 sm:p-6 lg:p-8">
@@ -117,10 +146,10 @@
                                 <th class="w-[34%] px-4 py-3 font-semibold">Corte</th>
                                 <th class="w-[18%] px-4 py-3 font-semibold text-right">Peso promedio</th>
                                 <th class="w-[20%] px-4 py-3 font-semibold text-right">Precio por kg</th>
-                                <th class="w-[20%] hidden sm:table-cell px-4 py-3 font-semibold text-right">Subtotal</th>
+                                <th class="w-[20%] subtotal-col px-4 py-3 font-semibold text-right">Subtotal</th>
                                 @auth
                                     @if(Auth::user()->isAdmin())
-                                        <th class="w-[8%] px-4 py-3 font-semibold text-center">Activo</th>
+                                        <th class="active-col w-[10%] px-4 py-3 text-base font-semibold text-center">Activo</th>
                                     @endif
                                 @endauth
                             </tr>
@@ -579,7 +608,7 @@
                 priceInput.dataset.cutKey = cutKey;
                 
                 const subtotalCell = document.createElement('td');
-                subtotalCell.className = 'hidden sm:table-cell px-4 py-3 text-right font-medium tabular-nums text-slate-900';
+                subtotalCell.className = 'subtotal-col px-4 py-3 text-right font-medium tabular-nums text-slate-900';
                 subtotalCell.textContent = formatMoney(subtotal);
                 subtotalCell.dataset.subtotalValue = String(subtotal);
                 subtotalCell.dataset.cutKey = cutKey;
@@ -591,7 +620,7 @@
                 priceCell.appendChild(priceInput);
 
                 const mobileSubtotal = document.createElement('div');
-                mobileSubtotal.className = 'sm:hidden mt-1 text-right text-xs font-medium tabular-nums text-slate-500';
+                mobileSubtotal.className = 'mobile-subtotal mt-1 text-right text-xs font-medium tabular-nums text-slate-500';
                 mobileSubtotal.textContent = formatMoney(subtotal);
                 mobileSubtotal.dataset.cutKey = cutKey;
                 priceCell.appendChild(mobileSubtotal);
@@ -603,11 +632,11 @@
 
                 if (isAdminUser) {
                     const statusCell = document.createElement('td');
-                    statusCell.className = 'px-4 py-3 text-center';
+                    statusCell.className = 'active-col px-4 py-3 text-center';
 
                     const statusToggle = document.createElement('input');
                     statusToggle.type = 'checkbox';
-                    statusToggle.className = 'h-4 w-4 cursor-pointer';
+                    statusToggle.className = 'h-5 w-5 cursor-pointer';
                     statusToggle.checked = cut.active !== false;
 
                     statusToggle.addEventListener('change', async (event) => {

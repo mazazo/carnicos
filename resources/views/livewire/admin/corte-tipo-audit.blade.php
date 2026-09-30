@@ -28,9 +28,18 @@
                         <h2 class="text-lg font-bold capitalize text-slate-900">{{ $type->nombre }}</h2>
                         <p class="text-xs uppercase tracking-wide text-slate-500">Modalidad: {{ $type->modalidad }}</p>
                     </div>
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                        {{ $type->cut_catalogs_count }} cortes
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                            {{ $type->cut_catalogs_count }} cortes
+                        </span>
+                        <button
+                            type="button"
+                            wire:click="openCreateCutModal({{ $type->id }})"
+                            class="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
+                        >
+                            Agregar corte
+                        </button>
+                    </div>
                 </div>
 
                 <div class="mt-3 flex flex-wrap gap-2 text-xs">
@@ -64,23 +73,32 @@
                                         </span>
                                     </td>
                                     <td class="px-3 py-2">
-                                        @if ($cut->activo)
+                                        <div class="flex flex-wrap gap-2">
                                             <button
                                                 type="button"
-                                                wire:click="cambiarEstadoCorte({{ $cut->id }}, false)"
-                                                class="rounded-md border border-amber-300 px-2 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-50"
+                                                wire:click="openEditCutModal({{ $cut->id }})"
+                                                class="rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                                             >
-                                                Desactivar
+                                                Editar corte
                                             </button>
-                                        @else
-                                            <button
-                                                type="button"
-                                                wire:click="cambiarEstadoCorte({{ $cut->id }}, true)"
-                                                class="rounded-md border border-emerald-300 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
-                                            >
-                                                Activar
-                                            </button>
-                                        @endif
+                                            @if ($cut->activo)
+                                                <button
+                                                    type="button"
+                                                    wire:click="cambiarEstadoCorte({{ $cut->id }}, false)"
+                                                    class="rounded-md border border-amber-300 px-2 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-50"
+                                                >
+                                                    Desactivar
+                                                </button>
+                                            @else
+                                                <button
+                                                    type="button"
+                                                    wire:click="cambiarEstadoCorte({{ $cut->id }}, true)"
+                                                    class="rounded-md border border-emerald-300 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                                                >
+                                                    Activar
+                                                </button>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
@@ -94,4 +112,53 @@
             </section>
         @endforeach
     </div>
+
+    @if ($showCutModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/50" wire:click="closeCutModal"></div>
+            <div class="relative z-10 w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">{{ $editingCutId ? 'Editar corte' : 'Agregar corte' }}</h3>
+                        <p class="mt-1 text-sm text-slate-600">
+                            {{ $editingCutId ? 'Actualizá el nombre o la cantidad esperada del corte.' : 'Creá un nuevo corte para el tipo seleccionado.' }}
+                        </p>
+                    </div>
+                    <button type="button" wire:click="closeCutModal" class="rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100">Cerrar</button>
+                </div>
+
+                <div class="mt-4 space-y-4">
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Tipo de animal</label>
+                        <select wire:model="selectedAnimalTypeId" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900">
+                            <option value="">Seleccionar tipo</option>
+                            @foreach ($animalTypes as $type)
+                                <option value="{{ $type->id }}">{{ $type->nombre }}</option>
+                            @endforeach
+                        </select>
+                        @error('selectedAnimalTypeId')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Nombre del corte</label>
+                        <input wire:model="cutNombre" type="text" maxlength="120" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900" placeholder="Ej: Bife angosto">
+                        @error('cutNombre')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Cantidad esperada</label>
+                        <input wire:model="cutCantidadEsperada" type="number" min="1" max="999" step="1" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900" placeholder="1">
+                        @error('cutCantidadEsperada')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
+                <div class="mt-5 flex justify-end gap-2">
+                    <button type="button" wire:click="closeCutModal" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancelar</button>
+                    <button type="button" wire:click="saveCut" class="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">
+                        {{ $editingCutId ? 'Guardar cambios' : 'Crear corte' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

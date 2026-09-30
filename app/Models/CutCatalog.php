@@ -47,6 +47,11 @@ class CutCatalog extends Model
         return $this->hasMany(DesposteCorte::class);
     }
 
+    public function cuarteoPartes(): HasMany
+    {
+        return $this->hasMany(CuarteoParte::class);
+    }
+
     public function referenceAverages(): HasMany
     {
         return $this->hasMany(CutReferenceAverage::class);

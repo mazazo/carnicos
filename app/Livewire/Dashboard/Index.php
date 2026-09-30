@@ -284,6 +284,7 @@ class Index extends Component
             ->sum('peso_total');
 
         $resesCount = $vacunoCount + $porcinoCount;
+        $produccionSemana = $resesCount + $cajonesCount;
 
         $vacunoAnimals = $this->recentAnimalsByKeywords($userId, ['vacuno', 'vaca', 'bovino']);
         $porcinoAnimals = $this->recentAnimalsByKeywords($userId, ['porcino', 'cerdo', 'chancho']);
@@ -295,6 +296,7 @@ class Index extends Component
             'vacuno_count' => $vacunoCount,
             'porcino_count' => $porcinoCount,
             'cajones_count' => $cajonesCount,
+            'produccion_semana' => $produccionSemana,
             'total_kg_procesados' => $totalKgProcesados,
             'vacuno_animals' => $vacunoAnimals,
             'porcino_animals' => $porcinoAnimals,

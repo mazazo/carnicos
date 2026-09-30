@@ -4,7 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\CutUserPrice;
     use App\Models\AnimalType;
 
 class Cut extends Model
@@ -35,5 +37,10 @@ class Cut extends Model
         public function animalType(): BelongsTo
         {
             return $this->belongsTo(AnimalType::class);
+        }
+
+        public function userPrices(): HasMany
+        {
+            return $this->hasMany(CutUserPrice::class);
         }
 }

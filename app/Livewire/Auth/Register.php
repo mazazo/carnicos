@@ -81,7 +81,7 @@ class Register extends Component
         request()->session()->regenerate();
         $user->sendEmailVerificationNotification();
 
-        $this->redirectRoute('verification.notice', navigate: true);
+        $this->redirectRoute('billing.plans', navigate: true);
     }
 
     private function normalizarDatos(): void

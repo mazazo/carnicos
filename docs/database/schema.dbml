@@ -1,0 +1,85 @@
+﻿Project carnicos {
+  database_type: "MySQL"
+  Note: "Esquema generado desde migrations (tablas + relaciones detectadas)."
+}
+
+Table animal_types {
+  id bigint [pk]
+}
+
+Table animals {
+  id bigint [pk]
+}
+
+Table cache {
+  id bigint [pk]
+}
+
+Table cache_locks {
+  id bigint [pk]
+}
+
+Table cuarteo_partes {
+  id bigint [pk]
+}
+
+Table cuarteos {
+  id bigint [pk]
+}
+
+Table cut_aliases {
+  id bigint [pk]
+}
+
+Table cut_catalogs {
+  id bigint [pk]
+}
+
+Table cut_reference_averages {
+  id bigint [pk]
+}
+
+Table cuts {
+  id bigint [pk]
+}
+
+Table desposte_cortes {
+  id bigint [pk]
+}
+
+Table despostes {
+  id bigint [pk]
+}
+
+Table failed_jobs {
+  id bigint [pk]
+}
+
+Table job_batches {
+  id bigint [pk]
+}
+
+Table jobs {
+  id bigint [pk]
+}
+
+Table password_reset_tokens {
+  id bigint [pk]
+}
+
+Table payments {
+  id bigint [pk]
+}
+
+Table sessions {
+  id bigint [pk]
+}
+
+Table subscriptions {
+  id bigint [pk]
+}
+
+Table users {
+  id bigint [pk]
+}
+

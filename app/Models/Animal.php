@@ -66,4 +66,9 @@ class Animal extends Model
     {
         return $this->hasMany(Desposte::class);
     }
+
+    public function cuarteos(): HasMany
+    {
+        return $this->hasMany(Cuarteo::class);
+    }
 }

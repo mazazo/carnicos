@@ -8,39 +8,49 @@
     @livewireStyles
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="flex min-h-screen items-center justify-center p-4 md:p-10">
-        <!-- Card única: logo izquierda + formulario derecha -->
-        <div class="flex w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-xl md:max-w-none md:w-auto">
+    <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+   
+        <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[0.85fr_1.15fr]">
+                <aside class="relative overflow-hidden bg-slate-900 p-5 text-white sm:p-7 md:p-8 lg:p-10">
+                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(148,163,184,0.28),_transparent_35%)]"></div>
+                    <div class="relative h-full">
+                        <div class="mb-5 inline-flex items-center rounded-full border border-slate-700 bg-slate-800/80 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-slate-200">
+                            Nashi
+                        </div>
 
-            <!-- Panel izquierdo: logo (oculto en mobile) -->
-            <div class="hidden md:flex w-64 shrink-0 flex-col items-center justify-center border-r border-slate-100 bg-slate-50 p-10">
-                <a href="{{ url('/') }}">
-                    <div class="flex flex-col items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="h-14 w-14" fill="none">
-                            <circle cx="32" cy="32" r="32" fill="#1e3a2f"/>
-                            <path d="M18 44c2-8 6-14 14-18s14-2 14 4-6 12-14 14-14-4-14 0z" fill="#4ade80" opacity=".9"/>
-                            <path d="M46 20c-2 8-6 14-14 18s-14 2-14-4 6-12 14-14 14 4 14 0z" fill="#86efac" opacity=".6"/>
-                        </svg>
-                        <span class="text-lg font-bold tracking-tight text-slate-800">Carnicos</span>
-                        <span class="text-xs text-slate-500 text-center leading-tight">Gestión y análisis<br>de rendimientos</span>
+                        <h2 class="text-2xl font-bold leading-tight sm:text-3xl">Bienvenido</h2>
+                        <p class="mt-3 max-w-md text-sm leading-6 text-slate-300">
+                            Registrate para ingresar y comenzar a gestionar tus cortes, rendimientos y decisiones de negocio desde un mismo lugar.
+                        </p>
+
+                        <div class="mt-6 space-y-3 sm:mt-8 sm:space-y-4">
+                            <div class="rounded-2xl border border-slate-700 bg-slate-800/60 p-4">
+                                <p class="text-sm font-semibold text-white">Gestion centralizada</p>
+                                <p class="mt-1 text-sm text-slate-300">Organizá cortes, animales y analisis sin perder trazabilidad.</p>
+                            </div>
+                            <div class="rounded-2xl border border-slate-700 bg-slate-800/60 p-4">
+                                <p class="text-sm font-semibold text-white">Rendimientos claros</p>
+                                <p class="mt-1 text-sm text-slate-300">Seguí tus promedios y entregas con visibilidad real del negocio.</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 rounded-2xl border border-slate-700 bg-white/5 p-4 text-sm text-slate-200 sm:mt-8">
+                            <p class="font-medium text-white">Tu cuenta te permite:</p>
+                            <ul class="mt-3 space-y-2 text-slate-300">
+                                <li>• Ingresar al dashboard</li>
+                                <li>• Gestionar animales y cortes</li>
+                                <li>• Guardar y comparar resultados</li>
+                            </ul>
+                        </div>
+
                     </div>
-                </a>
-            </div>
+                </aside>
 
-            <!-- Panel derecho: formulario -->
-            <div class="w-full p-8 md:w-80 md:shrink-0 md:p-10">
-                <!-- Logo solo en mobile -->
-                <div class="mb-6 flex flex-col items-center gap-1 md:hidden">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="h-10 w-10" fill="none">
-                        <circle cx="32" cy="32" r="32" fill="#1e3a2f"/>
-                        <path d="M18 44c2-8 6-14 14-18s14-2 14 4-6 12-14 14-14-4-14 0z" fill="#4ade80" opacity=".9"/>
-                        <path d="M46 20c-2 8-6 14-14 18s-14 2-14-4 6-12 14-14 14 4 14 0z" fill="#86efac" opacity=".6"/>
-                    </svg>
-                    <span class="text-sm font-bold text-slate-800">Carnicos</span>
-                </div>
-                {{ $slot }}
+                <section class="p-5 sm:p-7 lg:p-10">
+                    {{ $slot }}
+                </section>
             </div>
-
         </div>
     </div>
     @livewireScripts

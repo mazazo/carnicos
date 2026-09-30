@@ -33,4 +33,9 @@ class AnimalType extends Model
     {
         return $this->hasMany(CutCatalog::class);
     }
+
+    public function cuarteos(): HasMany
+    {
+        return $this->hasMany(Cuarteo::class);
+    }
 }

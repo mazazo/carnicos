@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use App\Models\CutUserPrice;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -56,6 +57,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function cutCatalogs(): HasMany
     {
         return $this->hasMany(CutCatalog::class);
+    }
+
+    public function cutPrices(): HasMany
+    {
+        return $this->hasMany(CutUserPrice::class);
+    }
+
+    public function cuarteos(): HasMany
+    {
+        return $this->hasMany(Cuarteo::class);
     }
 
     /** Suscripción activa actual */
