@@ -12,7 +12,7 @@ class Show extends Component
 
     public function mount(Animal $animal): void
     {
-        abort_unless((int) $animal->user_id === (int) Auth::id(), 403);
+        abort_unless((int) $animal->carniceria_id === (int) Auth::user()->carniceria_id, 403);
         $this->animal = $animal->load(['animalType', 'cuts']);
     }
 

@@ -2,8 +2,11 @@
 
 namespace App\Livewire\Auth;
 
+use App\Models\Carniceria;
 use App\Models\User;
+use App\Services\Suscripciones;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -11,6 +14,7 @@ use Livewire\Component;
 
 class Register extends Component
 {
+    public string $carniceria = '';
     public string $name = '';
     public string $last_name = '';
     public string $email = '';
@@ -49,6 +53,7 @@ class Register extends Component
             $this->normalizarDatos();
 
             $data = $this->validate([
+                'carniceria' => ['required', 'string', 'min:2', 'max:150'],
                 'name' => ['required', 'string', 'min:2', 'max:60', 'regex:/^[\pL\s\-\']+$/u'],
                 'last_name' => ['nullable', 'string', 'min:2', 'max:60', 'regex:/^[\pL\s\-\']+$/u'],
                 'email' => ['required', 'string', 'email:rfc', 'max:150', 'unique:users,email'],
@@ -66,19 +71,35 @@ class Register extends Component
             throw $exception;
         }
 
-        $user = User::query()->create([
-            'name' => $data['name'],
-            'last_name' => $data['last_name'] ?: null,
-            'email' => $data['email'],
-            'movil' => $data['movil'],
-            'password' => $data['password'],
-        ]);
+        // El cliente es la carnicería; quien se registra queda como su dueño.
+        $user = DB::transaction(function () use ($data): User {
+            $carniceria = Carniceria::query()->create([
+                'nombre' => $data['carniceria'],
+                'email' => $data['email'],
+                'telefono' => $data['movil'],
+            ]);
+
+            $dueno = User::query()->create([
+                'carniceria_id' => $carniceria->id,
+                'rol' => User::ROL_DUENO,
+                'name' => $data['name'],
+                'last_name' => $data['last_name'] ?: null,
+                'email' => $data['email'],
+                'movil' => $data['movil'],
+                'password' => $data['password'],
+            ]);
+
+            // Prueba gratis (días configurables) con acceso de Plan 1.
+            app(Suscripciones::class)->iniciarPrueba($carniceria, $dueno);
+
+            return $dueno;
+        });
 
         RateLimiter::clear($this->throttleKey());
         $this->syncLockState();
 
         Auth::login($user);
-        request()->session()->regenerate();
+        session()->regenerate();
         $user->sendEmailVerificationNotification();
 
         $this->redirectRoute('billing.plans', navigate: true);
@@ -86,6 +107,7 @@ class Register extends Component
 
     private function normalizarDatos(): void
     {
+        $this->carniceria = trim((string) preg_replace('/\s+/', ' ', $this->carniceria));
         $this->name = trim(preg_replace('/\s+/', ' ', $this->name));
         $this->last_name = trim((string) preg_replace('/\s+/', ' ', $this->last_name));
         $this->email = mb_strtolower(trim($this->email));

@@ -46,7 +46,7 @@ class CorteTipoAudit extends Component
         $user = Auth::user();
         abort_unless($user instanceof User && $user->isAdmin(), 403);
 
-        $cut = CutCatalog::query()->findOrFail($cutCatalogId);
+        $cut = CutCatalog::withoutGlobalScope('carniceria')->findOrFail($cutCatalogId);
 
         $this->editingCutId = (int) $cut->id;
         $this->selectedAnimalTypeId = (int) $cut->animal_type_id;
@@ -76,7 +76,7 @@ class CorteTipoAudit extends Component
         ]);
 
         if ($this->editingCutId !== null) {
-            $cut = CutCatalog::query()->findOrFail($this->editingCutId);
+            $cut = CutCatalog::withoutGlobalScope('carniceria')->findOrFail($this->editingCutId);
             $cut->update([
                 'animal_type_id' => (int) $validated['selectedAnimalTypeId'],
                 'nombre_canonico' => trim((string) $validated['cutNombre']),
@@ -84,6 +84,7 @@ class CorteTipoAudit extends Component
             ]);
         } else {
             CutCatalog::query()->create([
+                'carniceria_id' => null, // catálogo general
                 'user_id' => null,
                 'animal_type_id' => (int) $validated['selectedAnimalTypeId'],
                 'nombre_canonico' => trim((string) $validated['cutNombre']),
@@ -110,15 +111,15 @@ class CorteTipoAudit extends Component
         $user = Auth::user();
         abort_unless($user instanceof User && $user->isAdmin(), 403);
 
-        $cut = CutCatalog::query()->findOrFail($cutCatalogId);
+        $cut = CutCatalog::withoutGlobalScope('carniceria')->findOrFail($cutCatalogId);
         $cut->update(['activo' => $activo]);
     }
 
     public function render()
     {
         $animalTypes = AnimalType::query()
-            ->with(['cutCatalogs' => fn ($query) => $query->with('user')->orderBy('nombre_canonico')])
-            ->withCount('cutCatalogs')
+            ->with(['cutCatalogs' => fn ($query) => $query->withoutGlobalScope('carniceria')->with('user')->orderBy('nombre_canonico')])
+            ->withCount(['cutCatalogs' => fn ($query) => $query->withoutGlobalScope('carniceria')])
             ->orderBy('nombre')
             ->get();
 

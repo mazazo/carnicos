@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCarniceria;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CutUserPrice extends Model
 {
-    use HasFactory;
+    use BelongsToCarniceria, HasFactory;
 
     protected $fillable = [
+        'carniceria_id',
         'user_id',
         'cut_id',
         'precio_kg',

@@ -24,7 +24,7 @@ class Index extends Component
     {
         $cut = Cut::query()
             ->where('id', $cutId)
-            ->whereHas('animal', fn ($query) => $query->where('user_id', Auth::id()))
+            ->whereHas('animal') // el filtro por carnicería del animal se aplica solo
             ->firstOrFail();
 
         $cut->delete();
@@ -36,7 +36,7 @@ class Index extends Component
     {
         $cuts = Cut::query()
             ->with(['animal.animalType'])
-            ->whereHas('animal', fn ($query) => $query->where('user_id', Auth::id()))
+            ->whereHas('animal') // el filtro por carnicería del animal se aplica solo
             ->when($this->search !== '', function ($query) {
                 $query->where(function ($inner) {
                     $inner

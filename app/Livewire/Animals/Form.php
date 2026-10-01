@@ -71,11 +71,26 @@ class Form extends Component
         return $type ? (int) $type->id : null;
     }
 
+    /**
+     * Tipos de animal que puede cargar según su plan (el admin de la
+     * plataforma sin carnicería: todos).
+     *
+     * @return list<int>
+     */
+    private function tiposHabilitados(): array
+    {
+        $carniceria = Auth::user()->carniceria;
+
+        return $carniceria
+            ? $carniceria->tiposAnimalHabilitadosIds()
+            : AnimalType::query()->where('activo', true)->pluck('id')->map(fn ($id) => (int) $id)->all();
+    }
+
     public function mount(?Animal $animal = null): void
     {
         $this->fecha = now()->toDateString();
 
-        if ($animal && (int) $animal->user_id === (int) Auth::id()) {
+        if ($animal && (int) $animal->carniceria_id === (int) Auth::user()->carniceria_id) {
 
             $this->animal = $animal;
             $this->animal_type_id = (string) $animal->animal_type_id;
@@ -184,7 +199,7 @@ class Form extends Component
         $modalidad = $this->modalidad;
         
         $rules = [
-            'animal_type_id' => ['required', 'exists:animal_types,id'],
+            'animal_type_id' => ['required', 'integer', \Illuminate\Validation\Rule::in($this->tiposHabilitados())],
             'fecha'          => ['required', 'date'],
             'frigorifico'    => ['nullable', 'string', 'max:150'],
             'proveedor'      => ['nullable', 'string', 'max:150'],
@@ -254,7 +269,7 @@ class Form extends Component
                         'precio_kg'  => (float) $validated['nuevoPrecio'],
                     ], $senasaData);
 
-                    if ((int) $animal->user_id !== (int) Auth::id()) {
+                    if ((int) $animal->carniceria_id !== (int) Auth::user()->carniceria_id) {
                         abort(403);
                     }
                     $animal->update($animalData);
@@ -282,7 +297,7 @@ class Form extends Component
                 ]);
 
                 if ($animal) {
-                    if ((int) $animal->user_id !== (int) Auth::id()) {
+                    if ((int) $animal->carniceria_id !== (int) Auth::user()->carniceria_id) {
                         abort(403);
                     }
                     $animal->update($animalData);
@@ -317,7 +332,7 @@ class Form extends Component
     public function render()
     {
         return view('livewire.animals.form', [
-            'animal_types' => AnimalType::query()->where('activo', true)->orderBy('nombre')->get(),
+            'animal_types' => AnimalType::query()->where('activo', true)->whereIn('id', $this->tiposHabilitados())->orderBy('nombre')->get(),
         ]);
     }
 }

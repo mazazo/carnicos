@@ -17,6 +17,8 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasFactory, Notifiable;
 
     protected $fillable = [
+        'carniceria_id',
+        'rol',
         'name',
         'last_name',
         'email',
@@ -47,6 +49,20 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'is_admin' => 'boolean',
         ];
+    }
+
+    public const ROL_DUENO = 'dueno';
+    public const ROL_EMPLEADO = 'empleado';
+
+    /** Carnicería a la que pertenece (NULL: administrador de la plataforma). */
+    public function carniceria(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Carniceria::class);
+    }
+
+    public function esDueno(): bool
+    {
+        return $this->rol === self::ROL_DUENO;
     }
 
     public function animals(): HasMany
@@ -89,19 +105,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Payment::class);
     }
 
-    public function isPro(): bool
+    /** Plan vigente de su carnicería (prueba o pagado); null si no tiene. */
+    public function planVigente(): ?Plan
     {
-        return $this->plan === 'pro';
+        return $this->carniceria?->planVigente();
     }
 
-    public function isEnterprise(): bool
+    /** Su plan incluye el dashboard con estadísticas (Plan 3). */
+    public function tieneDashboardCompleto(): bool
     {
-        return $this->plan === 'enterprise';
-    }
-
-    public function isStarter(): bool
-    {
-        return $this->plan === 'starter';
+        return (bool) $this->planVigente()?->incluye_dashboard;
     }
 
     public function isAdmin(): bool
@@ -109,21 +122,22 @@ class User extends Authenticatable implements MustVerifyEmail
         return (bool) $this->is_admin;
     }
 
+    /**
+     * A dónde entra: el admin de la plataforma a su configuración; una
+     * carnicería con plan vigente a su inicio (dashboard completo solo si el
+     * plan lo incluye); sin plan vigente, a la página de planes.
+     */
     public function dashboardRouteName(): string
     {
         if ($this->isAdmin()) {
-            return 'dashboard.enterprise';
+            return $this->carniceria_id ? 'dashboard.enterprise' : 'admin.config.index';
         }
 
-        if ($this->isEnterprise()) {
-            return 'dashboard.enterprise';
+        if (! $this->planVigente()) {
+            return 'billing.plans';
         }
 
-        if ($this->isPro()) {
-            return 'dashboard.pro';
-        }
-
-        return 'billing.plans';
+        return $this->tieneDashboardCompleto() ? 'dashboard.enterprise' : 'dashboard.pro';
     }
 
     public function canDebugDashboards(): bool

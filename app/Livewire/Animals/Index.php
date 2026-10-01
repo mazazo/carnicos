@@ -24,7 +24,6 @@ class Index extends Component
     {
         $animal = Animal::query()
             ->where('id', $animalId)
-            ->where('user_id', Auth::id())
             ->firstOrFail();
 
         $animal->delete();
@@ -36,7 +35,6 @@ class Index extends Component
     {
         $animals = Animal::query()
             ->with(['animalType', 'cuts'])
-            ->where('user_id', Auth::id())
             ->when($this->search !== '', function ($query) {
                 $query->where(function ($inner) {
                     $inner

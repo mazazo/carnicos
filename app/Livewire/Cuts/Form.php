@@ -19,7 +19,7 @@ class Form extends Component
     {
         if ($cut) {
             $cut->load('animal');
-            abort_unless((int) $cut->animal->user_id === (int) Auth::id(), 403);
+            abort_unless((int) $cut->animal?->carniceria_id === (int) Auth::user()->carniceria_id, 403);
 
             $this->cut = $cut;
             $this->animal_id = (string) $cut->animal_id;
@@ -40,11 +40,10 @@ class Form extends Component
 
         $animal = Animal::query()
             ->where('id', $data['animal_id'])
-            ->where('user_id', Auth::id())
             ->firstOrFail();
 
         if ($this->cut) {
-            abort_unless((int) $this->cut->animal->user_id === (int) Auth::id(), 403);
+            abort_unless((int) $this->cut->animal?->carniceria_id === (int) Auth::user()->carniceria_id, 403);
 
             $this->cut->update([
                 'animal_id' => (int) $animal->id,
@@ -74,7 +73,6 @@ class Form extends Component
     {
         $animals = Animal::query()
             ->with('animalType')
-            ->where('user_id', Auth::id())
             ->latest('fecha')
             ->latest('id')
             ->get();

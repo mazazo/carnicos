@@ -2,77 +2,45 @@
 
 namespace App\Support\Billing;
 
+use App\Models\Plan;
+
+/**
+ * Planes para mostrar (página de planes y checkout). Ya no están escritos en
+ * el código: se leen de la tabla planes, editable por el administrador.
+ * Se mantiene la forma de array que usan las vistas.
+ */
 class PlanCatalog
 {
+    /** @return list<array<string, mixed>> */
     public static function all(): array
     {
-        return [
-            [
-                'id'          => 'starter',
-                'nombre'      => 'Starter',
-                'precio'      => 0,
-                'periodo'     => 'mes',
-                'descripcion' => 'Para empezar a gestionar tu produccion.',
-                'color'       => 'slate',
-                'features'    => [
-                    'Hasta 20 animales / mes',
-                    'Hasta 50 cortes registrados',
-                    '1 usuario',
-                    'Soporte por email',
-                ],
-                'limitado'    => [
-                    'Reportes avanzados',
-                    'Exportacion a Excel/PDF',
-                    'Multi-usuario',
-                ],
-            ],
-            [
-                'id'          => 'pro',
-                'nombre'      => 'Pro',
-                'precio'      => 4900,
-                'periodo'     => 'mes',
-                'descripcion' => 'Para carnicerias en crecimiento.',
-                'color'       => 'emerald',
-                'features'    => [
-                    'Animales y cortes ilimitados',
-                    'Hasta 5 usuarios',
-                    'Reportes y estadisticas',
-                    'Exportacion a Excel/PDF',
-                    'Soporte prioritario',
-                ],
-                'limitado'    => [
-                    'API externa',
-                    'Multi-sucursal',
-                ],
-            ],
-            [
-                'id'          => 'enterprise',
-                'nombre'      => 'Enterprise',
-                'precio'      => 9900,
-                'periodo'     => 'mes',
-                'descripcion' => 'Para operaciones grandes y cadenas.',
-                'color'       => 'sky',
-                'features'    => [
-                    'Todo lo de Pro',
-                    'Usuarios ilimitados',
-                    'Multi-sucursal',
-                    'API externa',
-                    'Integraciones a medida',
-                    'Soporte 24/7',
-                ],
-                'limitado'    => [],
-            ],
-        ];
+        return Plan::query()
+            ->activos()
+            ->with('precioMensual')
+            ->get()
+            ->map(fn (Plan $plan) => self::toArray($plan))
+            ->all();
     }
 
     public static function find(string $planId): ?array
     {
-        foreach (self::all() as $plan) {
-            if ($plan['id'] === $planId) {
-                return $plan;
-            }
-        }
+        $plan = Plan::query()->where('activo', true)->where('codigo', $planId)->with('precioMensual')->first();
 
-        return null;
+        return $plan ? self::toArray($plan) : null;
+    }
+
+    /** @return array<string, mixed> */
+    private static function toArray(Plan $plan): array
+    {
+        return [
+            'id' => $plan->codigo,
+            'nombre' => $plan->nombre,
+            'precio' => (int) round((float) ($plan->precioMensual?->precio ?? 0)),
+            'periodo' => 'mes',
+            'descripcion' => (string) $plan->descripcion,
+            'estilo' => $plan->estilo,
+            'features' => $plan->incluye(),
+            'limitado' => $plan->noIncluye(),
+        ];
     }
 }

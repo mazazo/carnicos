@@ -30,6 +30,10 @@
             <nav class="hidden items-center gap-3 text-sm sm:flex">
                 <a href="{{ route('animals.index') }}" class="rounded px-3 py-1 hover:bg-slate-100">Animales</a>
                 <a href="{{ route('cuts.index') }}" class="rounded px-3 py-1 hover:bg-slate-100">Cortes</a>
+                @if($authUser?->carniceria_id && $authUser->esDueno())
+                    <a href="{{ route('cuenta.usuarios') }}" class="rounded px-3 py-1 hover:bg-slate-100">Usuarios</a>
+                    <a href="{{ route('cuenta.tipos-animal') }}" class="rounded px-3 py-1 hover:bg-slate-100">Tipos</a>
+                @endif
                 <a href="{{ route('billing.plans') }}" class="rounded px-3 py-1 hover:bg-slate-100">Planes</a>
                 <span class="font-medium text-slate-700">{{ $authUser?->full_name ?? 'Invitado' }}</span>
                 @if($authUser?->isAdmin())
@@ -77,6 +81,10 @@
                 @endif
                 <a href="{{ route('animals.index') }}" class="rounded px-3 py-2 hover:bg-slate-100">Animales</a>
                 <a href="{{ route('cuts.index') }}" class="rounded px-3 py-2 hover:bg-slate-100">Cortes</a>
+                @if($authUser?->carniceria_id && $authUser->esDueno())
+                    <a href="{{ route('cuenta.usuarios') }}" class="rounded px-3 py-2 hover:bg-slate-100">Usuarios</a>
+                    <a href="{{ route('cuenta.tipos-animal') }}" class="rounded px-3 py-2 hover:bg-slate-100">Tipos de animal</a>
+                @endif
                 <a href="{{ route('billing.plans') }}" class="rounded px-3 py-2 font-semibold text-emerald-700 hover:bg-emerald-50">Planes</a>
                 @if($authUser)
                     <form method="POST" action="{{ route('logout') }}" class="mt-1">

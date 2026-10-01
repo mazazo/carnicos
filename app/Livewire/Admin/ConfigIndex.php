@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -18,6 +19,8 @@ class ConfigIndex extends Component
 
     public function render()
     {
-        return view('livewire.admin.config-index');
+        return view('livewire.admin.config-index', [
+            'pagosPendientes' => Payment::query()->where('status', Payment::PENDING)->count(),
+        ]);
     }
 }

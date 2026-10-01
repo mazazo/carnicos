@@ -11,7 +11,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'suscripcion' => \App\Http\Middleware\EnsureSuscripcionVigente::class,
+        ]);
+
+        // Mercado Pago avisa los pagos sin sesión: se valida la firma del aviso.
+        $middleware->validateCsrfTokens(except: ['webhooks/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
