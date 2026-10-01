@@ -15,7 +15,7 @@ class PantallasIngresoTest extends TestCase
         foreach (['register', 'login'] as $ruta) {
             $this->get(route($ruta))
                 ->assertOk()
-                ->assertSee('Bienvenido')
+                ->assertSee('Tu carnicería, ordenada')
                 ->assertDontSee('<header', false)
                 ->assertDontSee('Planes');
         }

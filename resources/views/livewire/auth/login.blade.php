@@ -1,46 +1,51 @@
 <x-layouts.guest>
-    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 class="text-xl font-semibold">Iniciar sesion</h1>
+    <div class="flex h-full flex-col justify-center">
+        <h1 class="text-2xl font-bold tracking-tight text-stone-900">Iniciar sesión</h1>
+        <p class="mt-1 text-sm text-stone-500">Entrá con tu email y contraseña.</p>
 
         @if ($showWarning)
-            <p class="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
-                Aviso: ya usaste este acceso varias veces desde esta IP. Te quedan {{ $attemptsRemaining }} intentos antes de mostrar el cartel de suscripcion.
-            </p>
+            <x-ui.alert tone="amber" class="mt-4">
+                Ya usaste este acceso varias veces desde esta conexión. Te quedan {{ $attemptsRemaining }} intentos antes de que se bloquee por un rato.
+            </x-ui.alert>
         @endif
 
         @if ($isLocked)
-            <p class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                Alcanzaste el limite de intentos para esta IP. Intenta nuevamente en {{ ceil($retryAfter / 60) }} minuto(s) o suscribite para continuar.
-            </p>
-            <p class="mt-2 text-sm text-slate-600">
-                <a href="{{ route('register.create-user') }}" class="font-medium text-slate-900 underline">Ver suscripcion</a>
-            </p>
+            <x-ui.alert tone="red" class="mt-4">
+                Alcanzaste el límite de intentos. Probá de nuevo en {{ ceil($retryAfter / 60) }} minuto(s) o
+                <a href="{{ route('register.create-user') }}" class="font-semibold underline">creá tu cuenta</a>.
+            </x-ui.alert>
         @endif
 
         <form wire:submit="login" class="mt-5 space-y-4">
             <div>
-                <label class="mb-1 block text-sm font-medium">Email</label>
-                <input wire:model="email" type="email" @disabled($isLocked) class="w-full rounded-lg border border-slate-300 px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400">
-                @error('email') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                <label for="email" class="mb-1 block text-sm font-medium text-stone-700">Email</label>
+                <input id="email" wire:model="email" type="email" autocomplete="email" autofocus @disabled($isLocked)
+                       class="w-full rounded-lg border border-stone-300 px-3 py-2.5 disabled:cursor-not-allowed">
+                @error('email')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
 
             <div>
-                <label class="mb-1 block text-sm font-medium">Contrasena</label>
-                <input wire:model="password" type="password" @disabled($isLocked) class="w-full rounded-lg border border-slate-300 px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400">
-                @error('password') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                <label for="password" class="mb-1 block text-sm font-medium text-stone-700">Contraseña</label>
+                <input id="password" wire:model="password" type="password" autocomplete="current-password" @disabled($isLocked)
+                       class="w-full rounded-lg border border-stone-300 px-3 py-2.5 disabled:cursor-not-allowed">
+                @error('password')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
 
-            <label class="flex items-center gap-2 text-sm">
-                <input wire:model="remember" type="checkbox" @disabled($isLocked) class="rounded border-slate-300 disabled:cursor-not-allowed">
+            <label class="flex items-center gap-2 text-sm text-stone-600">
+                <input wire:model="remember" type="checkbox" @disabled($isLocked) class="rounded border-stone-300 text-amber-500 focus:ring-amber-500 disabled:cursor-not-allowed">
                 Recordarme
             </label>
 
-            <button type="submit" @disabled($isLocked) class="w-full rounded-lg bg-slate-900 px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-400">Entrar</button>
+            <button type="submit" @disabled($isLocked) wire:loading.attr="disabled"
+                    class="w-full rounded-lg bg-amber-500 px-4 py-2.5 font-bold text-stone-950 shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50">
+                <span wire:loading.remove wire:target="login">Entrar</span>
+                <span wire:loading wire:target="login">Entrando…</span>
+            </button>
         </form>
 
-        <p class="mt-4 text-sm text-slate-600">
-            No tienes cuenta?
-            <a href="{{ route('register.create-user') }}" class="font-medium text-slate-900 underline">Crear usuario</a>
+        <p class="mt-5 text-sm text-stone-600">
+            ¿No tenés cuenta?
+            <a href="{{ route('register.create-user') }}" class="font-semibold text-amber-700 hover:underline">Creá tu carnicería</a>
         </p>
     </div>
 </x-layouts.guest>

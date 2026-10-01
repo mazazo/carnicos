@@ -42,6 +42,38 @@ class AppAndroidTest extends TestCase
             ->assertDownload('carnico.apk');
     }
 
+    public function test_el_admin_publica_una_version_nueva_y_queda_la_anterior(): void
+    {
+        $admin = $this->admin();
+        Storage::disk('local')->put(AppAndroidController::ARCHIVO, 'version vieja');
+
+        $this->actingAs($admin)->get('/app-android')->assertOk()->assertSee('Publicar una versión nueva');
+
+        $this->actingAs($admin)->post('/app-android/subir', [
+            'apk' => \Illuminate\Http\UploadedFile::fake()->create('app-release.apk', 1500, 'application/vnd.android.package-archive'),
+        ])->assertRedirect(route('app.android'))->assertSessionHas('success');
+
+        Storage::disk('local')->assertExists(AppAndroidController::ARCHIVO);
+        $this->assertSame('version vieja', Storage::disk('local')->get(AppAndroidController::ANTERIOR));
+        $this->assertNotSame('version vieja', Storage::disk('local')->get(AppAndroidController::ARCHIVO));
+
+        // Un archivo que no es .apk se rechaza y no toca lo publicado.
+        $this->actingAs($admin)->post('/app-android/subir', [
+            'apk' => \Illuminate\Http\UploadedFile::fake()->create('foto.jpg', 10),
+        ])->assertSessionHasErrors('apk');
+    }
+
+    public function test_solo_el_admin_puede_publicar(): void
+    {
+        [, $dueno] = $this->carniceriaCon('plan-3');
+        $this->actingAs($dueno)->get('/app-android')->assertDontSee('Publicar una versión nueva');
+        $this->actingAs($dueno)->post('/app-android/subir', [
+            'apk' => \Illuminate\Http\UploadedFile::fake()->create('app.apk', 10),
+        ])->assertForbidden();
+
+        Storage::disk('local')->assertMissing(AppAndroidController::ARCHIVO);
+    }
+
     public function test_sin_plan_completo_o_sin_permiso_de_app_no_hay_enlace_ni_descarga(): void
     {
         Storage::disk('local')->put(AppAndroidController::ARCHIVO, 'apk');

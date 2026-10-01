@@ -90,6 +90,7 @@
                     <div class="space-y-1">
                         <p class="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-stone-500">Administración</p>
                         <x-ui.nav-link :href="route('admin.config.index')" icon="cog" :active="request()->routeIs('admin.*')">Configuración</x-ui.nav-link>
+                        <x-ui.nav-link :href="route('app.android')" icon="download" :active="request()->routeIs('app.android*') && ! $authUser->carniceria_id">Publicar app</x-ui.nav-link>
                         <x-ui.nav-link :href="route('dashboard.enterprise')" icon="chart" :active="request()->routeIs('dashboard.enterprise')">Vista Plan Completo</x-ui.nav-link>
                         <x-ui.nav-link :href="route('dashboard.pro')" icon="chart" :active="request()->routeIs('dashboard.pro')">Vista Planes 1 y 2</x-ui.nav-link>
                     </div>

@@ -113,6 +113,7 @@ Route::middleware(['auth', 'verified', 'suscripcion'])->group(function () {
     // App Android: página con los pasos y descarga del APK (Plan Completo + permiso de app).
     Route::get('/app-android', AppAndroid::class)->name('app.android');
     Route::get('/app-android/descargar', [AppAndroidController::class, 'descargar'])->name('app.android.descargar');
+    Route::post('/app-android/subir', [AppAndroidController::class, 'subir'])->name('app.android.subir'); // solo admin
 
     // Cada parte según los permisos del usuario (el dueño tiene todos).
     Route::middleware('permiso:ingresos')->group(function () {
