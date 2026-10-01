@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Support\CortesPrimarios;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -21,5 +22,8 @@ class DatabaseSeeder extends Seeder
             CutCatalogSeeder::class,
             VacunoReferenceAverageSeeder::class,
         ]);
+
+        // Piezas grandes del vacuno y sus músculos (necesita el catálogo cargado).
+        CortesPrimarios::instalar();
     }
 }

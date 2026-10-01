@@ -1,5 +1,5 @@
-<x-layouts.app>
 <div>
+    <div>
     <h1 class="text-2xl font-semibold">{{ $cut ? 'Editar corte' : 'Nuevo corte' }}</h1>
 
     @if (session('success'))
@@ -73,5 +73,5 @@
     <div class="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white px-4 py-3 sm:hidden">
         <button form="cut-form" type="submit" class="w-full rounded-lg bg-slate-900 py-3 text-sm font-semibold text-white">Guardar</button>
     </div>
+    </div>
 </div>
-</x-layouts.app>

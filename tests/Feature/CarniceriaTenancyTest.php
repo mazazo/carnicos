@@ -114,17 +114,15 @@ class CarniceriaTenancyTest extends TestCase
         [, $duenoB] = $this->carniceria('B');
         $general = CutCatalog::query()->create(['carniceria_id' => null, 'animal_type_id' => $this->vacuno->id, 'nombre_canonico' => 'Vacío', 'cantidad_esperada' => 2, 'activo' => true]);
 
-        // Dar de baja un corte general crea la versión propia de la carnicería A.
+        // Dar de baja un corte general lo oculta solo para A, sin copiarlo ni tocarlo.
         Livewire::actingAs($duenoA)->test(Dashboard::class, ['variant' => 'enterprise'])->call('darBajaCorteCatalogo', $general->id);
-        $propio = CutCatalog::withoutGlobalScopes()->where('carniceria_id', $carniceriaA->id)->sole();
-        $this->assertFalse($propio->activo);
-        $this->assertSame($duenoA->id, $propio->user_id);
+        $this->assertSame(0, CutCatalog::withoutGlobalScopes()->where('carniceria_id', $carniceriaA->id)->count());
         $this->assertTrue($general->fresh()->activo);
+        $this->assertSame([], CutCatalog::query()->habilitadosPara($carniceriaA->id)->pluck('id')->all());
 
-        // El empleado de A la reactiva (es de su carnicería) sin crear otra.
-        Livewire::actingAs($empleadoA)->test(Dashboard::class, ['variant' => 'enterprise'])->call('darAltaCorteCatalogo', $propio->id);
-        $this->assertTrue($propio->fresh()->activo);
-        $this->assertSame(1, CutCatalog::withoutGlobalScopes()->where('carniceria_id', $carniceriaA->id)->count());
+        // El empleado de A lo vuelve a habilitar.
+        Livewire::actingAs($empleadoA)->test(Dashboard::class, ['variant' => 'enterprise'])->call('darAltaCorteCatalogo', $general->id);
+        $this->assertSame([$general->id], CutCatalog::query()->habilitadosPara($carniceriaA->id)->pluck('id')->all());
 
         // B ve el general, no el de A.
         $this->actingAs($duenoB);

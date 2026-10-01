@@ -20,7 +20,7 @@
 
         <a href="{{ route('admin.pagos') }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md">
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Cobros</p>
-            <h2 class="mt-2 text-lg font-bold text-slate-900">Pagos@if ($pagosPendientes) <span class="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800">{{ $pagosPendientes }} pendiente(s)</span>@endif</h2>
+            <h2 class="mt-2 text-lg font-bold text-slate-900">Pagos @if ($pagosPendientes) <span class="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800">{{ $pagosPendientes }} pendiente(s)</span>@endif</h2>
             <p class="mt-2 text-sm text-slate-600">Aprobar o rechazar avisos de transferencia y ver los pagos de Mercado Pago.</p>
             <span class="mt-4 inline-flex text-xs font-semibold text-amber-700">Abrir modulo &rarr;</span>
         </a>

@@ -2,16 +2,15 @@
 
 namespace App\Livewire\Auth;
 
-use App\Models\Carniceria;
+use App\Actions\RegistrarCarniceria;
 use App\Models\User;
-use App\Services\Suscripciones;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 
+#[Layout('layouts.auth')]
 class Register extends Component
 {
     public string $carniceria = '';
@@ -52,48 +51,15 @@ class Register extends Component
         try {
             $this->normalizarDatos();
 
-            $data = $this->validate([
-                'carniceria' => ['required', 'string', 'min:2', 'max:150'],
-                'name' => ['required', 'string', 'min:2', 'max:60', 'regex:/^[\pL\s\-\']+$/u'],
-                'last_name' => ['nullable', 'string', 'min:2', 'max:60', 'regex:/^[\pL\s\-\']+$/u'],
-                'email' => ['required', 'string', 'email:rfc', 'max:150', 'unique:users,email'],
-                'movil' => ['required', 'string', 'regex:/^\+?[0-9]{8,15}$/', 'unique:users,movil'],
-                'password' => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()->symbols()],
-            ], [
-                'name.regex' => 'El nombre solo puede contener letras, espacios, apostrofe y guion.',
-                'last_name.regex' => 'El apellido solo puede contener letras, espacios, apostrofe y guion.',
-                'last_name.min' => 'Si ingresas apellido, debe tener al menos 2 caracteres.',
-                'movil.regex' => 'El movil debe tener entre 8 y 15 digitos (opcional + al inicio).',
-            ]);
+            $data = $this->validate(RegistrarCarniceria::reglas(), RegistrarCarniceria::mensajes());
         } catch (ValidationException $exception) {
             RateLimiter::hit($this->throttleKey(), self::DECAY_SECONDS);
             $this->syncLockState();
             throw $exception;
         }
 
-        // El cliente es la carnicería; quien se registra queda como su dueño.
-        $user = DB::transaction(function () use ($data): User {
-            $carniceria = Carniceria::query()->create([
-                'nombre' => $data['carniceria'],
-                'email' => $data['email'],
-                'telefono' => $data['movil'],
-            ]);
-
-            $dueno = User::query()->create([
-                'carniceria_id' => $carniceria->id,
-                'rol' => User::ROL_DUENO,
-                'name' => $data['name'],
-                'last_name' => $data['last_name'] ?: null,
-                'email' => $data['email'],
-                'movil' => $data['movil'],
-                'password' => $data['password'],
-            ]);
-
-            // Prueba gratis (días configurables) con acceso de Plan 1.
-            app(Suscripciones::class)->iniciarPrueba($carniceria, $dueno);
-
-            return $dueno;
-        });
+        // El cliente es la carnicería; quien se registra queda como su dueño (con la prueba gratis).
+        $user = app(RegistrarCarniceria::class)->handle($data);
 
         RateLimiter::clear($this->throttleKey());
         $this->syncLockState();

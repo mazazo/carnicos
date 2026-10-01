@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Http\Controllers\Api\ProduccionController;
 use App\Models\Animal;
 use App\Models\CutCatalog;
+use App\Models\Desposte;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -37,25 +39,6 @@ class Index extends Component
         return (int) Auth::user()->carniceria_id;
     }
 
-    /**
-     * Corte propio de la carnicería (su versión de un corte general, o uno nuevo).
-     * Quien lo crea queda como user_id.
-     */
-    private function guardarCorteCarniceria(int $animalTypeId, string $nombre, array $valores): void
-    {
-        $corte = CutCatalog::query()->firstOrNew([
-            'carniceria_id' => $this->currentCarniceriaId(),
-            'animal_type_id' => $animalTypeId,
-            'nombre_canonico' => $nombre,
-        ]);
-
-        if (! $corte->exists) {
-            $corte->user_id = $this->currentUserId();
-        }
-
-        $corte->fill($valores)->save();
-    }
-
     private function resolveAnimalTypeIds(array $keywords): array
     {
         return \App\Models\AnimalType::query()
@@ -83,8 +66,6 @@ class Index extends Component
 
     private function loadCutCatalogByKind(): array
     {
-        $userId = $this->currentUserId();
-
         $keywordsByKind = [
             'vacuno' => ['vacuno', 'vaca', 'bovino'],
             'porcino' => ['porcino', 'cerdo', 'chancho'],
@@ -96,28 +77,11 @@ class Index extends Component
         foreach ($keywordsByKind as $kind => $keywords) {
             $animalTypeIds = $this->resolveAnimalTypeIds($keywords);
 
-            $baseCatalog = CutCatalog::query()
-                ->whereIn('animal_type_id', $animalTypeIds)
-                ->whereNull('carniceria_id')
-                ->orderBy('nombre_canonico')
-                ->get(['id', 'carniceria_id', 'animal_type_id', 'user_id', 'nombre_canonico', 'cantidad_esperada', 'activo']);
-
-            $userCatalog = CutCatalog::query()
-                ->whereIn('animal_type_id', $animalTypeIds)
-                ->where('carniceria_id', $this->currentCarniceriaId())
-                ->orderBy('nombre_canonico')
-                ->get(['id', 'carniceria_id', 'animal_type_id', 'user_id', 'nombre_canonico', 'cantidad_esperada', 'activo']);
-
             $effectiveByName = [];
-
-            foreach ($baseCatalog as $cut) {
-                $key = mb_strtolower(trim((string) $cut->nombre_canonico));
-                $effectiveByName[$key] = $cut;
-            }
-
-            foreach ($userCatalog as $cut) {
-                $key = mb_strtolower(trim((string) $cut->nombre_canonico));
-                $effectiveByName[$key] = $cut;
+            foreach ($animalTypeIds as $animalTypeId) {
+                foreach (CutCatalog::catalogoPara($this->currentCarniceriaId(), (int) $animalTypeId) as $cut) {
+                    $effectiveByName[mb_strtolower(trim((string) $cut->nombre_canonico))] = $cut;
+                }
             }
 
             $catalogIds = collect(array_values($effectiveByName))->pluck('id')->all();
@@ -147,8 +111,8 @@ class Index extends Component
                     'id' => (int) $cut->id,
                     'nombre' => (string) $cut->nombre_canonico,
                     'cantidad_esperada' => (int) ($cut->cantidad_esperada ?? 1),
-                    'activo' => (bool) $cut->activo,
-                    'is_user_defined' => $cut->carniceria_id !== null,
+                    'activo' => (bool) $cut->habilitado,
+                    'is_user_defined' => $cut->esPropio(),
                     'ultimo_precio' => $lastPrices[(int) $cut->id] ?? null,
                 ])
                 ->values()
@@ -175,7 +139,7 @@ class Index extends Component
     private function recentAnimalsByKeywords(int $userId, array $keywords)
     {
         return Animal::query()
-            ->with('animalType')
+            ->with(['animalType', 'cutCatalog'])
             ->withCount('cuts')
             ->whereHas('animalType', function ($query) use ($keywords) {
                 $query->where(function ($inner) use ($keywords) {
@@ -193,38 +157,18 @@ class Index extends Component
 
     public function darAltaCorteCatalogo(int $cutCatalogId): void
     {
-        $cut = CutCatalog::query()->findOrFail($cutCatalogId);
-
-        // Corte propio de la carnicería: se cambia directo.
-        if ($cut->carniceria_id !== null) {
-            abort_unless((int) $cut->carniceria_id === $this->currentCarniceriaId(), 403);
-            $cut->update(['activo' => true]);
-            return;
-        }
-
-        // Corte del catálogo general: la carnicería guarda su propia versión.
-        $this->guardarCorteCarniceria((int) $cut->animal_type_id, (string) $cut->nombre_canonico, [
-            'cantidad_esperada' => (int) ($cut->cantidad_esperada ?? 1),
-            'activo' => true,
-        ]);
+        $this->corteDelCatalogo($cutCatalogId)->habilitarPara($this->currentCarniceriaId(), true);
     }
 
     public function darBajaCorteCatalogo(int $cutCatalogId): void
     {
-        $cut = CutCatalog::query()->findOrFail($cutCatalogId);
+        $this->corteDelCatalogo($cutCatalogId)->habilitarPara($this->currentCarniceriaId(), false);
+    }
 
-        // Corte propio de la carnicería: se cambia directo.
-        if ($cut->carniceria_id !== null) {
-            abort_unless((int) $cut->carniceria_id === $this->currentCarniceriaId(), 403);
-            $cut->update(['activo' => false]);
-            return;
-        }
-
-        // Corte del catálogo general: la carnicería guarda su propia versión.
-        $this->guardarCorteCarniceria((int) $cut->animal_type_id, (string) $cut->nombre_canonico, [
-            'cantidad_esperada' => (int) ($cut->cantidad_esperada ?? 1),
-            'activo' => false,
-        ]);
+    /** Un corte general o propio de la carnicería (el scope global filtra los ajenos). */
+    private function corteDelCatalogo(int $cutCatalogId): CutCatalog
+    {
+        return CutCatalog::query()->findOrFail($cutCatalogId);
     }
 
     public function agregarCorteCatalogo(string $kind, string $nombre, int $cantidadEsperada = 1): void
@@ -254,10 +198,7 @@ class Index extends Component
             throw ValidationException::withMessages(['kind' => 'No se encontró tipo de animal para esta categoría.']);
         }
 
-        $this->guardarCorteCarniceria((int) $animalTypeId, $nombre, [
-            'cantidad_esperada' => $cantidadEsperada,
-            'activo' => true,
-        ]);
+        CutCatalog::agregarPropio($this->currentCarniceriaId(), (int) $animalTypeId, $nombre, $userId, $cantidadEsperada);
     }
 
     public function render()
@@ -271,22 +212,22 @@ class Index extends Component
         $porcinoIds = $this->resolveAnimalTypeIds(['porcino', 'cerdo', 'chancho']);
         $avicolaIds = $this->resolveAnimalTypeIds(['avicola', 'aviar', 'pollo', 'ave']);
 
-        $vacunoCount = Animal::query()
+        $vacunoCount = Animal::query()->sinPiezas()
             ->whereIn('animal_type_id', $vacunoIds)
             ->whereBetween('fecha', [$fechaDesde, $fechaHasta])
             ->count();
 
-        $porcinoCount = Animal::query()
+        $porcinoCount = Animal::query()->sinPiezas()
             ->whereIn('animal_type_id', $porcinoIds)
             ->whereBetween('fecha', [$fechaDesde, $fechaHasta])
             ->count();
 
-        $cajonesCount = Animal::query()
+        $cajonesCount = Animal::query()->sinPiezas()
             ->whereIn('animal_type_id', $avicolaIds)
             ->whereBetween('fecha', [$fechaDesde, $fechaHasta])
             ->count();
 
-        $totalKgProcesados = Animal::query()
+        $totalKgProcesados = Animal::query()->whereNull('desposte_origen_id') // las piezas de un desposte propio no son un ingreso nuevo
             ->whereBetween('fecha', [$fechaDesde, $fechaHasta])
             ->sum('peso_total');
 
@@ -297,8 +238,29 @@ class Index extends Component
         $porcinoAnimals = $this->recentAnimalsByKeywords($userId, ['porcino', 'cerdo', 'chancho']);
         $avicolaAnimals = $this->recentAnimalsByKeywords($userId, ['avicola', 'pollo', 'ave']);
 
-        return view('livewire.dashboard.' . $this->variant, [
+        // Producciones: pendientes (para seguirlas) y las últimas terminadas.
+        $resumen = fn (Desposte $d) => ProduccionController::resumen($d);
+        $pendientes = Desposte::query()->with(['animales', 'pesadas', 'animalType'])
+            ->where('estado', Desposte::PENDIENTE)->whereNotNull('animal_type_id')
+            ->latest('id')->take(5)->get()->map($resumen);
+        $terminadas = Desposte::query()->with(['animales', 'cortes', 'animalType'])
+            ->where('estado', Desposte::TERMINADO)->whereNotNull('animal_type_id')
+            ->latest('fecha_desposte')->latest('id')->take(5)->get()->map($resumen);
+
+        return view('livewire.dashboard.panel', [
             'variant' => $this->variant,
+            'producciones_pendientes' => $pendientes,
+            'producciones_terminadas' => $terminadas,
+            // Stock sin despostar hoy (medias, cajones y piezas disponibles o en un desposte pendiente).
+            'kg_restantes' => (float) Animal::query()
+                ->whereIn('estado', [Animal::DISPONIBLE, Animal::EN_DESPOSTE])
+                ->whereIn('animal_type_id', Auth::user()->carniceria?->tiposAnimalHabilitadosIds() ?? [])
+                ->sum('peso_total'),
+            // Cuartos y piezas grandes disponibles para cuartear, por tipo de animal.
+            'piezas_disponibles' => Animal::query()->piezas()->disponibles()
+                ->whereIn('animal_type_id', Auth::user()->carniceria?->tiposAnimalHabilitadosIds() ?? [])
+                ->selectRaw('animal_type_id, COUNT(*) as cantidad, SUM(peso_total) as kg')
+                ->groupBy('animal_type_id')->orderByDesc('cantidad')->get(),
             'reses_count' => $resesCount,
             'vacuno_count' => $vacunoCount,
             'porcino_count' => $porcinoCount,

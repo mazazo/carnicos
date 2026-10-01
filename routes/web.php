@@ -14,6 +14,12 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use App\Livewire\Billing\Plans as BillingPlans;
 use App\Livewire\Cuts\Form as CutsForm;
 use App\Livewire\Cuts\Index as CutsIndex;
+use App\Livewire\Produccion\Index as ProduccionIndex;
+use App\Livewire\Ingresos\Index as IngresosIndex;
+use App\Livewire\AppAndroid;
+use App\Http\Controllers\AppAndroidController;
+use App\Livewire\Producciones\Index as ProduccionesIndex;
+use App\Http\Controllers\DespostePdfController;
 use App\Livewire\Dashboard\Index as DashboardIndex;
 use App\Livewire\Admin\ConfigIndex as AdminConfigIndex;
 use App\Livewire\Admin\CorteTipoAudit as AdminCorteTipoAudit;
@@ -77,8 +83,8 @@ Route::post('/logout', function () {
 // Planes y pago: siempre accesibles (aunque la prueba o el plan hayan vencido).
 Route::middleware('auth')->group(function () {
     Route::get('/billing/planes', BillingPlans::class)->name('billing.plans');
-    Route::get('/billing/pasarela/{codigo}', BillingCheckout::class)->name('billing.checkout');
-    Route::get('/billing/retorno/{payment}', BillingRetorno::class)->whereNumber('payment')->name('billing.retorno');
+    Route::get('/billing/pasarela/{codigo}', BillingCheckout::class)->middleware('permiso:dueno')->name('billing.checkout');
+    Route::get('/billing/retorno/{payment}', BillingRetorno::class)->whereNumber('payment')->middleware('permiso:dueno')->name('billing.retorno');
 });
 
 // Avisos de Mercado Pago (sin sesión; se valida la firma y se consulta el pago).
@@ -89,7 +95,7 @@ Route::post('/webhooks/mercadopago', MercadoPagoWebhookController::class)
 // Todo lo demás exige prueba o plan vigente (bloqueo total).
 Route::middleware(['auth', 'verified', 'suscripcion'])->group(function () {
     Route::get('/cuenta/tipos-de-animal', CuentaTiposAnimal::class)->name('cuenta.tipos-animal');
-    Route::get('/cuenta/usuarios', CuentaUsuarios::class)->name('cuenta.usuarios');
+    Route::get('/cuenta/usuarios', CuentaUsuarios::class)->middleware('permiso:dueno')->name('cuenta.usuarios');
 
     Route::get('/dashboard', function () {
         /** @var User $user */
@@ -104,14 +110,30 @@ Route::middleware(['auth', 'verified', 'suscripcion'])->group(function () {
         ->defaults('variant', 'pro')
         ->name('dashboard.pro');
 
-    Route::get('/animals', AnimalsIndex::class)->name('animals.index');
-    Route::get('/animals/create', AnimalsForm::class)->name('animals.create');
-    Route::get('/animals/{animal}/edit', AnimalsForm::class)->name('animals.edit');
-    Route::get('/animals/{animal}', AnimalsShow::class)->name('animals.show');
+    // App Android: página con los pasos y descarga del APK (Plan Completo + permiso de app).
+    Route::get('/app-android', AppAndroid::class)->name('app.android');
+    Route::get('/app-android/descargar', [AppAndroidController::class, 'descargar'])->name('app.android.descargar');
 
-    Route::get('/cuts', CutsIndex::class)->name('cuts.index');
-    Route::get('/cuts/create', CutsForm::class)->name('cuts.create');
-    Route::get('/cuts/{cut}/edit', CutsForm::class)->name('cuts.edit');
+    // Cada parte según los permisos del usuario (el dueño tiene todos).
+    Route::middleware('permiso:ingresos')->group(function () {
+        Route::get('/ingresos', IngresosIndex::class)->name('ingresos.index');
+        Route::get('/animals', AnimalsIndex::class)->name('animals.index');
+        Route::get('/animals/create', AnimalsForm::class)->name('animals.create');
+        Route::get('/animals/{animal}/edit', AnimalsForm::class)->name('animals.edit');
+        Route::get('/animals/{animal}', AnimalsShow::class)->name('animals.show');
+    });
+
+    Route::middleware('permiso:producciones')->group(function () {
+        Route::get('/producciones', ProduccionesIndex::class)->name('producciones.index');
+        Route::get('/produccion/{tipo}', ProduccionIndex::class)->whereNumber('tipo')->name('produccion');
+        Route::get('/producciones/{desposte}/pdf', DespostePdfController::class)->whereNumber('desposte')->name('produccion.pdf');
+    });
+
+    Route::middleware('permiso:cortes')->group(function () {
+        Route::get('/cuts', CutsIndex::class)->name('cuts.index');
+        Route::get('/cuts/create', CutsForm::class)->name('cuts.create');
+        Route::get('/cuts/{cut}/edit', CutsForm::class)->name('cuts.edit');
+    });
 
     Route::get('/admin/config', AdminConfigIndex::class)->name('admin.config.index');
     Route::redirect('/admin/config/usuarios', '/admin/config/carnicerias')->name('admin.config.usuarios');

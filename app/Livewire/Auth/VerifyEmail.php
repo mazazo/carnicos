@@ -4,9 +4,11 @@ namespace App\Livewire\Auth;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+#[Layout('layouts.auth')]
 class VerifyEmail extends Component
 {
     public bool $resent = false;

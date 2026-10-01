@@ -1,101 +1,158 @@
-<x-layouts.app>
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <h1 class="text-2xl font-semibold">Cortes</h1>
-        <a href="{{ route('cuts.create') }}" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Nuevo corte</a>
-    </div>
+@php
+    $emojis = ['vacuno' => '🐄', 'porcino' => '🐖', 'aviar' => '🐔'];
+    $etiquetas = ['vacuno' => 'Vacuno', 'porcino' => 'Cerdo', 'aviar' => 'Avícola'];
+    $filtros = ['todos' => 'Todos', 'habilitados' => 'Habilitados', 'deshabilitados' => 'Deshabilitados', 'piezas' => 'Piezas grandes', 'propios' => 'Propios'];
+    $tipoActual = $tipos->firstWhere('id', $tipoId);
+@endphp
+<div>
+    <x-ui.page-header title="Cortes" subtitle="Elegí qué cortes usa tu carnicería en cada animal y sumá los tuyos con los nombres que usan en tu zona.">
+        @if ($puedeEditar && $tipoActual)
+            <x-ui.button variant="accent" icon="plus" wire:click="$set('agregando', true)">Agregar corte</x-ui.button>
+        @endif
+    </x-ui.page-header>
 
     @if (session('success'))
-        <div class="mt-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
-            {{ session('success') }}
-        </div>
+        <x-ui.alert class="mb-4">{{ session('success') }}</x-ui.alert>
     @endif
 
-    <div class="mt-4 rounded-xl border border-slate-200 bg-white p-4">
-        <input
-            wire:model.live.debounce.300ms="search"
-            type="text"
-            placeholder="Buscar por corte, tipo o fecha"
-            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-        >
-
-        <div class="mt-4 overflow-x-auto">
+    @if ($tipos->isEmpty())
+        <x-ui.empty>Tu carnicería no tiene tipos de animal habilitados.</x-ui.empty>
+    @else
+        {{-- Tipos de animal --}}
+        <div class="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
+            @foreach ($tipos as $tipo)
+                @php($activo = $tipo->id === $tipoId)
+                <button
+                    type="button"
+                    wire:click="elegirTipo({{ $tipo->id }})"
+                    @class([
+                        'flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition sm:flex-row sm:gap-3 sm:p-4 sm:text-left',
+                        'border-amber-500 bg-amber-50 ring-1 ring-amber-500' => $activo,
+                        'border-stone-200 bg-white hover:border-stone-300' => ! $activo,
+                    ])
+                >
+                    <span @class(['flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl', 'bg-amber-100' => $activo, 'bg-stone-100' => ! $activo])>{{ $emojis[$tipo->nombre] ?? '🔪' }}</span>
+                    <span class="min-w-0">
+                        <span class="block font-semibold text-stone-900">{{ $etiquetas[$tipo->nombre] ?? ucfirst($tipo->nombre) }}</span>
+                        <span class="block text-xs text-stone-500">{{ $conteos[$tipo->id]['habilitados'] }} de {{ $conteos[$tipo->id]['total'] }}<span class="hidden sm:inline"> cortes habilitados</span></span>
+                    </span>
+                </button>
+            @endforeach
         </div>
 
-        {{-- Mobile card list --}}
-        <div class="mt-4 space-y-3 sm:hidden">
-            @forelse ($cuts as $cut)
-                <div class="rounded-lg border border-slate-200 p-4">
-                    <div class="flex items-start justify-between gap-2">
-                        <p class="font-medium">{{ $cut->nombre }}</p>
-                        <span class="text-xs font-semibold text-slate-900">${{ number_format((float) $cut->peso * (float) ($cut->precio_kg ?? 0), 2) }}</span>
+        <x-ui.card :padding="false">
+            {{-- Agregar corte --}}
+            @if ($agregando && $puedeEditar)
+                <form wire:submit="agregar" class="border-b border-stone-100 bg-amber-50/50 px-5 py-4">
+                    <label for="nuevo-corte" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                        Nuevo corte de {{ $etiquetas[$tipoActual->nombre] ?? $tipoActual->nombre }}
+                    </label>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <input id="nuevo-corte" wire:model="nuevoNombre" type="text" maxlength="120" autofocus placeholder="Ej: Tapa de asado, Palomita, Chingolo…" class="w-full flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm">
+                        <select wire:model="nuevoNivel" class="rounded-lg border border-stone-300 px-3 py-2 text-sm" aria-label="Tipo de corte">
+                            <option value="musculo">Músculo</option>
+                            <option value="primario">Pieza grande</option>
+                        </select>
+                        <div class="flex gap-2">
+                            <x-ui.button type="submit" variant="primary" icon="check">Agregar</x-ui.button>
+                            <x-ui.button variant="ghost" wire:click="$set('agregando', false)">Cancelar</x-ui.button>
+                        </div>
                     </div>
-                    <p class="mt-1 text-xs text-slate-500 capitalize">{{ $cut->animal->animalType->nombre }} · {{ $cut->animal->fecha->format('d/m/Y') }}</p>
-                    <div class="mt-2 flex gap-4 text-xs text-slate-600">
-                        <span>Peso: <strong>{{ number_format((float) $cut->peso, 3) }} kg</strong></span>
-                        <span>Precio kg: <strong>${{ number_format((float) ($cut->precio_kg ?? 0), 2) }}</strong></span>
-                    </div>
-                    <div class="mt-3 flex gap-3 border-t border-slate-100 pt-3 text-sm">
-                        <a href="{{ route('cuts.edit', $cut) }}" class="font-medium text-slate-900 underline">Editar</a>
-                        <button
-                            type="button"
-                            wire:click="deleteCut({{ $cut->id }})"
-                            wire:confirm="Se eliminara este corte. Continuar?"
-                            class="font-medium text-red-700 underline"
-                        >Eliminar</button>
-                    </div>
+                    @error('nuevoNombre')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    <p class="mt-1 text-xs text-stone-500">Si el corte ya está en la lista pero deshabilitado, se habilita en vez de duplicarlo.</p>
+                </form>
+            @endif
+
+            {{-- Búsqueda y filtros --}}
+            <div class="flex flex-col gap-3 border-b border-stone-100 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="relative lg:w-72">
+                    <x-ui.icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                    <input wire:model.live.debounce.300ms="search" type="search" placeholder="Buscar corte" class="w-full rounded-lg border border-stone-300 py-2 pl-9 pr-3 text-sm">
                 </div>
-            @empty
-                <p class="py-4 text-center text-sm text-slate-500">No hay cortes registrados.</p>
-            @endforelse
-        </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="inline-flex flex-wrap rounded-lg border border-stone-200 bg-stone-50 p-1 text-sm">
+                        @foreach ($filtros as $valor => $texto)
+                            <button type="button" wire:click="$set('filtro', '{{ $valor }}')" @class([
+                                'rounded-md px-3 py-1 font-medium transition',
+                                'bg-white text-stone-900 shadow-sm' => $filtro === $valor,
+                                'text-stone-500 hover:text-stone-900' => $filtro !== $valor,
+                            ])>{{ $texto }}</button>
+                        @endforeach
+                    </div>
+                    @if ($puedeEditar && $cortes->isNotEmpty())
+                        <x-ui.button size="sm" variant="secondary" wire:click="habilitarTodos(true)" wire:confirm="¿Habilitar todos los cortes de la lista?">Habilitar todos</x-ui.button>
+                        <x-ui.button size="sm" variant="ghost" wire:click="habilitarTodos(false)" wire:confirm="¿Deshabilitar todos los cortes de la lista?">Deshabilitar todos</x-ui.button>
+                    @endif
+                </div>
+            </div>
 
-        {{-- Desktop table --}}
-        <div class="mt-4 hidden overflow-x-auto sm:block">
-            <table class="min-w-full text-sm">
-                <thead>
-                    <tr class="border-b text-left text-slate-600">
-                        <th class="py-2">Corte</th>
-                        <th class="py-2">Animal</th>
-                        <th class="py-2">Peso</th>
-                        <th class="py-2">Precio kg</th>
-                        <th class="py-2">Valor</th>
-                        <th class="py-2">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($cuts as $cut)
-                        <tr class="border-b">
-                            <td class="py-2">{{ $cut->nombre }}</td>
-                            <td class="py-2">
-                                <div class="capitalize">{{ $cut->animal->animalType->nombre }}</div>
-                                <div class="text-xs text-slate-500">{{ $cut->animal->fecha->format('Y-m-d') }}</div>
-                            </td>
-                            <td class="py-2">{{ number_format((float) $cut->peso, 3) }} kg</td>
-                            <td class="py-2">${{ number_format((float) ($cut->precio_kg ?? 0), 2) }}</td>
-                            <td class="py-2">${{ number_format((float) $cut->peso * (float) ($cut->precio_kg ?? 0), 2) }}</td>
-                            <td class="py-2">
-                                <div class="flex gap-2">
-                                    <a href="{{ route('cuts.edit', $cut) }}" class="text-slate-900 underline">Editar</a>
-                                    <button
-                                        type="button"
-                                        wire:click="deleteCut({{ $cut->id }})"
-                                        wire:confirm="Se eliminara este corte. Continuar?"
-                                        class="text-red-700 underline"
-                                    >
-                                        Eliminar
-                                    </button>
+            {{-- Lista --}}
+            @if ($cortes->isEmpty())
+                <div class="p-5">
+                    <x-ui.empty>{{ $search !== '' ? 'Ningún corte coincide con la búsqueda.' : 'No hay cortes en esta lista.' }}</x-ui.empty>
+                </div>
+            @else
+                <ul class="divide-y divide-stone-100">
+                    @foreach ($cortes as $corte)
+                        <li wire:key="corte-{{ $corte->id }}" @class(['flex items-center gap-3 px-5 py-3', 'bg-stone-50/70' => ! $corte->habilitado])>
+                            @if ($editandoId === $corte->id)
+                                <form wire:submit="guardarNombre" class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+                                    <div class="flex-1">
+                                        <input wire:model="editandoNombre" type="text" maxlength="120" autofocus class="w-full rounded-lg border border-stone-300 px-3 py-1.5 text-sm">
+                                        @error('editandoNombre')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <x-ui.button type="submit" size="sm" variant="primary">Guardar</x-ui.button>
+                                        <x-ui.button size="sm" variant="ghost" wire:click="cancelarEdicion">Cancelar</x-ui.button>
+                                    </div>
+                                </form>
+                            @else
+                                <div class="min-w-0 flex-1">
+                                    <p @class(['truncate font-medium first-letter:uppercase', 'text-stone-900' => $corte->habilitado, 'text-stone-400 line-through decoration-stone-300' => ! $corte->habilitado])>{{ $corte->nombre_canonico }}</p>
+                                    @if ($corte->esPrimario() || $corte->esPropio())
+                                        <div class="mt-0.5 flex flex-wrap gap-1">
+                                            @if ($corte->esPrimario())<x-ui.badge tone="stone">Pieza grande</x-ui.badge>@endif
+                                            @if ($corte->esPropio())<x-ui.badge tone="amber">Propio</x-ui.badge>@endif
+                                        </div>
+                                    @endif
+                                    @if ($corte->esPrimario() && $corte->partes->isNotEmpty())
+                                        <p class="mt-0.5 truncate text-xs text-stone-500">Contiene: {{ $corte->partes->pluck('nombre_canonico')->map(fn ($n) => mb_strtolower($n))->unique()->implode(', ') }}</p>
+                                    @endif
                                 </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="py-4 text-center text-slate-500">No hay cortes registrados.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
 
-        <div class="mt-4">{{ $cuts->links() }}</div>
-    </div>
-</x-layouts.app>
+                                @if ($puedeEditar && $corte->esPropio())
+                                    <button type="button" wire:click="editar({{ $corte->id }})" class="rounded-lg p-2 text-stone-400 hover:bg-stone-100 hover:text-stone-700" title="Cambiar nombre" aria-label="Cambiar nombre de {{ $corte->nombre_canonico }}">
+                                        <x-ui.icon name="pencil" class="h-4 w-4" />
+                                    </button>
+                                    <button type="button" wire:click="eliminar({{ $corte->id }})" wire:confirm="¿Borrar &quot;{{ $corte->nombre_canonico }}&quot;? Si ya se usó en despostes, solo se deshabilita." class="rounded-lg p-2 text-stone-400 hover:bg-red-50 hover:text-red-700" title="Borrar" aria-label="Borrar {{ $corte->nombre_canonico }}">
+                                        <x-ui.icon name="trash" class="h-4 w-4" />
+                                    </button>
+                                @endif
+
+                                {{-- Interruptor habilitado --}}
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked="{{ $corte->habilitado ? 'true' : 'false' }}"
+                                    aria-label="{{ $corte->habilitado ? 'Deshabilitar' : 'Habilitar' }} {{ $corte->nombre_canonico }}"
+                                    @if ($puedeEditar) wire:click="alternar({{ $corte->id }})" @else disabled @endif
+                                    @class([
+                                        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60',
+                                        'bg-amber-500' => $corte->habilitado,
+                                        'bg-stone-300' => ! $corte->habilitado,
+                                    ])
+                                >
+                                    <span @class(['inline-block h-5 w-5 rounded-full bg-white shadow transition', 'translate-x-5' => $corte->habilitado, 'translate-x-0.5' => ! $corte->habilitado])></span>
+                                </button>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </x-ui.card>
+
+        @unless ($puedeEditar)
+            <p class="mt-3 text-sm text-stone-500">Solo el dueño de la carnicería puede cambiar los cortes.</p>
+        @endunless
+    @endif
+</div>

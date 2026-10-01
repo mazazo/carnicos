@@ -1,4 +1,4 @@
-<x-layouts.app>
+<div>
     <div class="flex flex-wrap items-center justify-between gap-3">
         <h1 class="text-2xl font-semibold">Animales</h1>
         <a href="{{ route('animals.create') }}" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Nuevo animal</a>
@@ -94,4 +94,4 @@
 
         <div class="mt-4">{{ $animals->links() }}</div>
     </div>
-</x-layouts.app>
+</div>

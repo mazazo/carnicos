@@ -12,6 +12,7 @@ use Livewire\Component;
 /**
  * Usuarios de la carnicería. Solo el dueño los administra, y puede crear
  * hasta el máximo de su plan (Plan 1: no crea; Plan 2: 2 en total; Plan 3: 4).
+ * A cada empleado le elige qué puede usar: ingresos, producciones, cortes y la app.
  */
 #[Layout('layouts.app')]
 class Usuarios extends Component
@@ -28,11 +29,20 @@ class Usuarios extends Component
 
     public string $password = '';
 
+    /** @var array<int, string> permisos del empleado nuevo */
+    public array $permisos = ['ingresos', 'producciones', 'cortes', 'app'];
+
+    /** Empleado al que se le están editando los permisos. */
+    public ?int $editandoId = null;
+
+    /** @var array<int, string> */
+    public array $permisosEditando = [];
+
     public function nuevo(): void
     {
         $this->asegurarDueno();
         abort_unless($this->puedeCrear(), 403);
-        $this->reset('name', 'last_name', 'email', 'movil', 'password');
+        $this->reset('name', 'last_name', 'email', 'movil', 'password', 'permisos');
         $this->resetValidation();
         $this->mostrarFormulario = true;
     }
@@ -54,16 +64,56 @@ class Usuarios extends Component
             'email' => ['required', 'email:rfc', 'max:150', 'unique:users,email'],
             'movil' => ['required', 'regex:/^\+?[0-9]{8,15}$/', 'unique:users,movil'],
             'password' => ['required', Password::min(8)->letters()->mixedCase()->numbers()],
+            'permisos' => ['array'],
+            'permisos.*' => ['string', 'in:'.implode(',', array_keys(User::PERMISOS))],
         ], ['movil.regex' => 'El móvil debe tener entre 8 y 15 dígitos.']);
 
         $usuario = User::query()->create($data + [
             'carniceria_id' => $dueno->carniceria_id,
             'rol' => User::ROL_EMPLEADO,
+            'permisos' => array_values(array_unique($this->permisos)),
         ]);
         $usuario->forceFill(['email_verified_at' => now()])->save(); // lo da de alta el dueño
 
         $this->mostrarFormulario = false;
         session()->flash('success', "Usuario {$usuario->email} creado.");
+    }
+
+    public function editarPermisos(int $id): void
+    {
+        $empleado = $this->empleado($id);
+        $this->editandoId = $empleado->id;
+        $this->permisosEditando = $empleado->permisos ?? [];
+    }
+
+    public function guardarPermisos(): void
+    {
+        $empleado = $this->empleado((int) $this->editandoId);
+        $this->validate(['permisosEditando.*' => ['string', 'in:'.implode(',', array_keys(User::PERMISOS))]]);
+
+        $empleado->update(['permisos' => array_values(array_unique($this->permisosEditando))]);
+        if (! $empleado->puede('app')) {
+            $empleado->tokens()->delete(); // sin permiso de app: se cierra su sesión en el celular
+        }
+
+        $this->reset('editandoId', 'permisosEditando');
+        session()->flash('success', "Permisos de {$empleado->full_name} guardados.");
+    }
+
+    public function cancelarPermisos(): void
+    {
+        $this->reset('editandoId', 'permisosEditando');
+    }
+
+    /** Un empleado de la carnicería del dueño (al dueño no se le editan permisos). */
+    private function empleado(int $id): User
+    {
+        $dueno = $this->asegurarDueno();
+
+        return User::query()
+            ->where('carniceria_id', $dueno->carniceria_id)
+            ->where('rol', User::ROL_EMPLEADO)
+            ->findOrFail($id);
     }
 
     public function eliminar(int $id): void
@@ -105,6 +155,7 @@ class Usuarios extends Component
             'plan' => $user->planVigente(),
             'esDueno' => $user->esDueno(),
             'puedeCrear' => $user->esDueno() && $this->puedeCrear(),
+            'listaPermisos' => User::PERMISOS,
         ]);
     }
 }

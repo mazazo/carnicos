@@ -4,9 +4,11 @@ namespace App\Livewire\Auth;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Models\User;
 
+#[Layout('layouts.auth')]
 class Login extends Component
 {
     public string $email = '';

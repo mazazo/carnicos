@@ -6,7 +6,37 @@
 @source '../**/*.js';
 @source '../../app/**/*.php';
 
+/* Identidad Carnico (igual que la app Android): piedra oscura + ámbar. */
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@layer base {
+    body {
+        @apply bg-stone-100 text-stone-900 antialiased;
+    }
+
+    /* Campos de formulario consistentes en todas las pantallas. */
+    input:not([type='checkbox']):not([type='radio']):not([type='range']),
+    select,
+    textarea {
+        @apply rounded-lg border-stone-300 bg-white text-sm text-stone-900 placeholder:text-stone-400;
+    }
+
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible {
+        @apply border-amber-500 outline-none ring-2 ring-amber-500/30;
+    }
+
+    input:disabled,
+    input[readonly],
+    select:disabled {
+        @apply bg-stone-100 text-stone-500;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
 }

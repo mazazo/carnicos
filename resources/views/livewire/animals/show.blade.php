@@ -1,4 +1,4 @@
-<x-layouts.app>
+<div>
     <div class="flex flex-wrap items-center justify-between gap-3">
         <h1 class="text-2xl font-semibold">Detalle de animal</h1>
         <div class="flex gap-2">
@@ -60,4 +60,4 @@
             </div>
         </div>
     </div>
-</x-layouts.app>
+</div>

@@ -21,6 +21,11 @@ class Plans extends Component
         $carniceria = $user->carniceria;
         $vigente = $carniceria?->suscripcionVigente();
 
+        // Los planes y pagos son cosa del dueño: el empleado solo ve si la cuenta está al día.
+        if ($carniceria && ! $user->esDueno() && ! $user->isAdmin()) {
+            return view('livewire.billing.solo-dueno', ['vigente' => $vigente, 'carniceria' => $carniceria]);
+        }
+
         return view('livewire.billing.plans', [
             'planes' => PlanCatalog::all(),
             'planActual' => $vigente?->planModel?->codigo,

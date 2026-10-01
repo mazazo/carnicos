@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\User;
 use Closure;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -27,19 +28,30 @@ class EnsureSuscripcionVigente
         $carniceria = $user->carniceria;
 
         if (! $carniceria || ! $carniceria->estaActiva()) {
-            return redirect()->route('billing.plans')
-                ->with('error', 'Tu cuenta está suspendida. Comunicate con administración.');
+            return $this->redirigir($request, 'billing.plans', 'Tu cuenta está suspendida. Comunicate con administración.');
         }
 
         if (! $carniceria->suscripcionVigente()) {
-            return redirect()->route('billing.plans')
-                ->with('error', 'Tu prueba o tu plan venció. Elegí un plan para seguir usando el sistema.');
+            return $this->redirigir($request, 'billing.plans', 'Tu prueba o tu plan venció. Elegí un plan para seguir usando el sistema.');
         }
 
         if ($carniceria->debeElegirTiposAnimal() && ! $request->routeIs('cuenta.tipos-animal')) {
-            return redirect()->route('cuenta.tipos-animal');
+            return $this->redirigir($request, 'cuenta.tipos-animal');
         }
 
         return $next($request);
+    }
+
+    /**
+     * RedirectResponse directa: en las páginas Livewire redirect() devuelve el
+     * Redirector de Livewire, que no es una Response y rompe el middleware.
+     */
+    private function redirigir(Request $request, string $ruta, ?string $error = null): RedirectResponse
+    {
+        if ($error !== null && $request->hasSession()) {
+            $request->session()->flash('error', $error);
+        }
+
+        return new RedirectResponse(route($ruta));
     }
 }
