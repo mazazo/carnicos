@@ -2,7 +2,7 @@
     $campo = 'w-full rounded-lg border border-stone-300 px-3 py-2 text-sm disabled:cursor-not-allowed';
     $etiqueta = 'mb-1 block text-sm font-medium text-stone-700';
 @endphp
-<x-layouts.guest>
+<div>
     <div class="w-full">
         <div class="mb-4">
             <h1 class="text-2xl font-bold tracking-tight text-stone-900">Creá tu carnicería</h1>
@@ -79,4 +79,4 @@
             <a href="{{ route('login') }}" class="font-semibold text-amber-700 hover:underline">Iniciar sesión</a>
         </p>
     </div>
-</x-layouts.guest>
+</div>

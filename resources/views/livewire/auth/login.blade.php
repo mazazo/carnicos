@@ -1,4 +1,4 @@
-<x-layouts.guest>
+<div>
     <div class="flex h-full flex-col justify-center">
         <h1 class="text-2xl font-bold tracking-tight text-stone-900">Iniciar sesión</h1>
         <p class="mt-1 text-sm text-stone-500">Entrá con tu email y contraseña.</p>
@@ -48,4 +48,4 @@
             <a href="{{ route('register.create-user') }}" class="font-semibold text-amber-700 hover:underline">Creá tu carnicería</a>
         </p>
     </div>
-</x-layouts.guest>
+</div>

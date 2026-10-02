@@ -1,5 +1,5 @@
-<x-layouts.guest>
-    <div class="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+<div>
+    <div>
         <h1 class="text-xl font-semibold">Verifica tu correo</h1>
         <p class="mt-1 text-sm text-stone-600">
             Te enviamos un enlace de verificacion a tu correo electronico. Por favor revisalo y haz clic en el enlace para activar tu cuenta.
@@ -29,4 +29,4 @@
             </button>
         </div>
     </div>
-</x-layouts.guest>
+</div>
