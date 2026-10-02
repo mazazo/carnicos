@@ -28,7 +28,7 @@
                 @error('carniceria')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
 
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
                     <label for="name" class="{{ $etiqueta }}">Nombre</label>
                     <input id="name" wire:model="name" type="text" autocomplete="given-name" @disabled($isLocked) class="{{ $campo }}" placeholder="Ej: Juan">
@@ -41,7 +41,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
                     <label for="email" class="{{ $etiqueta }}">Email</label>
                     <input id="email" wire:model="email" type="email" autocomplete="email" @disabled($isLocked) class="{{ $campo }}" placeholder="correo@empresa.com">
@@ -54,7 +54,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
                     <label for="password" class="{{ $etiqueta }}">Contraseña</label>
                     <input id="password" wire:model="password" type="password" autocomplete="new-password" @disabled($isLocked) class="{{ $campo }}">

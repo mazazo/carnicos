@@ -14,7 +14,7 @@
          tarjeta compacta y centrada, que entra completa en tablet. Cada pantalla va en $slot. --}}
     <div class="flex min-h-screen items-center justify-center px-4 py-6 sm:px-6">
         <div class="w-full max-w-4xl overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-xl shadow-stone-300/40">
-            <div class="grid grid-cols-1 md:grid-cols-[0.9fr_1.1fr]">
+            <div class="grid grid-cols-1 sm:grid-cols-[0.9fr_1.1fr]">
                 <aside class="relative overflow-hidden bg-stone-950 p-6 text-white md:p-8">
                     <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.22),transparent_45%)]"></div>
                     <div class="relative flex h-full flex-col">
